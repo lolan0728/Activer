@@ -46,6 +46,7 @@ namespace Activer
             StartStopButton.Unchecked += StartStopButton_Unchecked;
 
             this.Closing += MainWindow_Closing;
+            // test
         }
 
         // ======================================================
