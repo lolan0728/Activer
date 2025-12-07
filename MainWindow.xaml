@@ -1,0 +1,262 @@
+﻿<Window x:Class="Activer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        xmlns:local="clr-namespace:Activer"
+        Title="Activer" Height="390" Width="250"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterScreen"
+        Icon="pack://application:,,,/Resources/activer.ico"
+        SizeToContent="Manual">
+
+    <Window.Resources>
+        <!-- Start / Stop Converter -->
+        <local:StartStopConverter x:Key="StartStopConverter"/>
+
+        <!-- Watermark TextBox Style -->
+        <Style x:Key="WatermarkTextBox" TargetType="TextBox">
+            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#888"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="3"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Height" Value="35"/>
+            <Setter Property="Width" Value="80"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Grid>
+                            <Border x:Name="border"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="8"/>
+                            <ScrollViewer x:Name="PART_ContentHost"
+                                          Margin="2"
+                                          VerticalAlignment="Center"/>
+                            <TextBlock x:Name="watermark"
+                                       Text="{TemplateBinding Tag}"
+                                       Foreground="Gray"
+                                       Margin="6,0,0,0"
+                                       VerticalAlignment="Center"
+                                       IsHitTestVisible="False"
+                                       Visibility="Collapsed"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <!-- Show watermark when TextBox is empty and not focused -->
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="Text" Value=""/>
+                                    <Condition Property="IsKeyboardFocused" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="watermark" Property="Visibility" Value="Visible"/>
+                            </MultiTrigger>
+                            <!-- Highlight border when focused -->
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#3B8EEA"/>
+                            </Trigger>
+                            <!-- Disabled state styling -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="#D0D0D5"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#A0A0A5"/>
+                                <Setter Property="Foreground" Value="#888"/>
+                                <Setter TargetName="border" Property="Opacity" Value="0.7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- macOS-style ToggleButton -->
+        <Style x:Key="MacOSToggleButton" TargetType="ToggleButton">
+            <Setter Property="Height" Value="50"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="20"
+                                Padding="5"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <!-- Start state -->
+                            <Trigger Property="IsChecked" Value="False">
+                                <Setter TargetName="border" Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#6EE57B" Offset="0"/>
+                                            <GradientStop Color="#4CD964" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter Property="Content" Value="Start"/>
+                            </Trigger>
+
+                            <!-- Start pressed state -->
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsPressed" Value="True"/>
+                                    <Condition Property="IsChecked" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="border" Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#4CD964" Offset="0"/>
+                                            <GradientStop Color="#38B34A" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="border" Property="Margin" Value="1,2,0,0"/>
+                            </MultiTrigger>
+
+                            <!-- Stop state -->
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="border" Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#FF7F7F" Offset="0"/>
+                                            <GradientStop Color="#FF4C4C" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter Property="Content" Value="Stop"/>
+                            </Trigger>
+
+                            <!-- Stop pressed state -->
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsPressed" Value="True"/>
+                                    <Condition Property="IsChecked" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="border" Property="Background">
+                                    <Setter.Value>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#D64545" Offset="0"/>
+                                            <GradientStop Color="#B03232" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Setter.Value>
+                                </Setter>
+                                <Setter TargetName="border" Property="Margin" Value="1,2,0,0"/>
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Action Interval Inputs -->
+        <GroupBox Header="Action Interval (Seconds)" Margin="0,5,0,5" Padding="5" HorizontalAlignment="Stretch" Grid.Row="0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="30"/>
+                    <ColumnDefinition Width="80"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBox Name="IntervalMinBox" Style="{StaticResource WatermarkTextBox}" Tag="Min" Text="10"
+                         PreviewTextInput="NumberOnly" Grid.Column="0"/>
+                <TextBlock Text="~" VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Column="1"/>
+                <TextBox Name="IntervalMaxBox" Style="{StaticResource WatermarkTextBox}" Tag="Max" Text="60"
+                         PreviewTextInput="NumberOnly" Grid.Column="2"/>
+            </Grid>
+        </GroupBox>
+
+        <!-- Idle Trigger Input -->
+        <GroupBox Header="Trigger only if idle > (Seconds):" Margin="0,5,0,5" Padding="5" HorizontalAlignment="Stretch" Grid.Row="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBox Name="IdleSecondsBox" Style="{StaticResource WatermarkTextBox}" Tag="Seconds" Text="60"
+                         PreviewTextInput="NumberOnly" Grid.Column="0"/>
+            </Grid>
+        </GroupBox>
+
+        <!-- End Time Input -->
+        <GroupBox Margin="0,5,0,10" Padding="5" HorizontalAlignment="Stretch" Grid.Row="2">
+            <GroupBox.Header>
+                <StackPanel Orientation="Horizontal">
+                    <CheckBox x:Name="EnableTimeInputCheckBox" VerticalAlignment="Center" Margin="0,0,5,0" IsChecked="True"/>
+                    <TextBlock Text="End time (HH:MM:SS)" VerticalAlignment="Center" FontWeight="Bold"/>
+                </StackPanel>
+            </GroupBox.Header>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="30"/>
+                    <ColumnDefinition Width="80"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- End Time Masked TextBox -->
+                <Border Grid.Column="0" BorderBrush="#888" BorderThickness="1" CornerRadius="8" Background="White" Width="80" Height="40">
+                    <xctk:MaskedTextBox Name="TimeEndBox" Mask="00:00:00" PromptChar="0" Text="18:00:00"
+                                        FontSize="16" VerticalContentAlignment="Center" HorizontalAlignment="Stretch" BorderThickness="0"
+                                        IsEnabled="{Binding IsChecked, ElementName=EnableTimeInputCheckBox}">
+                        <xctk:MaskedTextBox.Style>
+                            <Style TargetType="xctk:MaskedTextBox" BasedOn="{StaticResource WatermarkTextBox}"/>
+                        </xctk:MaskedTextBox.Style>
+                    </xctk:MaskedTextBox>
+                </Border>
+            </Grid>
+        </GroupBox>
+
+        <!-- Show Log and Version Info -->
+        <Grid Grid.Row="3" Margin="0,5,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <!-- Left checkbox takes remaining space -->
+                <ColumnDefinition Width="Auto"/>
+                <!-- Right button auto width -->
+            </Grid.ColumnDefinitions>
+
+            <!-- Show Log Window Checkbox -->
+            <CheckBox x:Name="ShowLogCheckBox" Content="Show Log Window" VerticalAlignment="Center"/>
+
+            <!-- Version Info Button -->
+            <Button Grid.Column="1"
+            Content="Version Info"
+            Width="80"
+            Height="25"
+            Margin="5,0,0,0"
+            VerticalAlignment="Center"
+            Background="Transparent"
+            Foreground="Gray"
+            FontSize="12"
+            BorderThickness="0"
+            Cursor="Arrow"
+            Padding="2"
+            Click="VersionButton_Click"/>
+        </Grid>
+
+        <!-- Start / Stop Toggle Button -->
+        <ToggleButton Grid.Row="4" x:Name="StartStopButton" Style="{StaticResource MacOSToggleButton}"/>
+    </Grid>
+</Window>

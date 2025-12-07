@@ -1,0 +1,105 @@
+﻿<Window x:Class="Activer.LogWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Activity Log" Height="300" Width="500"
+        Icon="Resources/activer.ico"
+        ResizeMode="NoResize">
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- Run time display and Clear button -->
+            <RowDefinition Height="*"/>
+            <!-- Log text area -->
+        </Grid.RowDefinitions>
+
+        <!-- Top section: Run time and Clear button -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- RunTime and EndTime display -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,8">
+                <TextBlock x:Name="RunTimeTextBlock"
+                           FontSize="14"
+                           FontWeight="Bold"
+                           Text="Run time: 00:00:00"
+                           VerticalAlignment="Center"/>
+
+                <TextBlock x:Name="EndTimeTextBlock"
+                           FontSize="14"
+                           FontWeight="Bold"
+                           Margin="12,0,0,0"
+                           Text="End Time: --"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- Clear log button -->
+            <Button x:Name="ClearButton"
+                    Width="60"
+                    Height="26"
+                    HorizontalAlignment="Right"
+                    Margin="0,0,0,8"
+                    Content="Clear"
+                    Click="ClearButton_Click">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Background" Value="#B0C4DE"/>
+                        <!-- Light steel blue background -->
+                        <Setter Property="Foreground" Value="Black"/>
+                        <Setter Property="BorderBrush" Value="#B0C4DE"/>
+                        <Setter Property="BorderThickness" Value="1"/>
+                        <Setter Property="FontFamily" Value="Segoe UI"/>
+                        <Setter Property="FontSize" Value="12"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                            CornerRadius="4">
+                                        <ContentPresenter HorizontalAlignment="Center"
+                                                          VerticalAlignment="Center"
+                                                          ContentSource="Content"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <!-- Mouse over styling -->
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#A0B8D8"/>
+                                            <Setter Property="BorderBrush" Value="#A0B8D8"/>
+                                        </Trigger>
+                                        <!-- Pressed state styling -->
+                                        <Trigger Property="IsPressed" Value="True">
+                                            <Setter Property="Background" Value="#90A8C8"/>
+                                            <Setter Property="BorderBrush" Value="#90A8C8"/>
+                                        </Trigger>
+                                        <!-- Disabled state styling -->
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter Property="Background" Value="#D3D3D3"/>
+                                            <Setter Property="BorderBrush" Value="#D3D3D3"/>
+                                            <Setter Property="Foreground" Value="#888"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </Grid>
+
+        <!-- Log display area -->
+        <TextBox x:Name="LogTextBox"
+                 Grid.Row="1"
+                 IsReadOnly="True"
+                 VerticalScrollBarVisibility="Auto"
+                 HorizontalScrollBarVisibility="Auto"
+                 TextWrapping="Wrap"
+                 FontFamily="Consolas"
+                 FontSize="13"
+                 Padding="6"/>
+    </Grid>
+</Window>
