@@ -50,7 +50,7 @@ namespace Activer
                 this.BeginAnimation(Window.OpacityProperty, fadeOut);
                 this.BeginAnimation(Window.TopProperty, moveOut);
             };
-            timer.Start();
+            timer.Start(); 
         }
     }
 }
