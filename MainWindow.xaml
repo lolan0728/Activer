@@ -178,10 +178,10 @@
                     <ColumnDefinition Width="80"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBox Name="IntervalMinBox" Style="{StaticResource WatermarkTextBox}" Tag="Min" Text="10"
+                <TextBox Name="IntervalMinBox" Style="{StaticResource WatermarkTextBox}" Tag="Min" Text="10" LostFocus="IntervalBox_LostFocus"
                          PreviewTextInput="NumberOnly" Grid.Column="0"/>
                 <TextBlock Text="~" VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Column="1"/>
-                <TextBox Name="IntervalMaxBox" Style="{StaticResource WatermarkTextBox}" Tag="Max" Text="60"
+                <TextBox Name="IntervalMaxBox" Style="{StaticResource WatermarkTextBox}" Tag="Max" Text="60" LostFocus="IntervalBox_LostFocus"
                          PreviewTextInput="NumberOnly" Grid.Column="2"/>
             </Grid>
         </GroupBox>
@@ -194,7 +194,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBox Name="IdleSecondsBox" Style="{StaticResource WatermarkTextBox}" Tag="Seconds" Text="60"
+                <TextBox Name="IdleSecondsBox" Style="{StaticResource WatermarkTextBox}" Tag="Seconds" Text="60" LostFocus="NumberBox_LostFocus"
                          PreviewTextInput="NumberOnly" Grid.Column="0"/>
             </Grid>
         </GroupBox>
@@ -217,7 +217,8 @@
 
                 <!-- End Time Masked TextBox -->
                 <Border Grid.Column="0" BorderBrush="#888" BorderThickness="1" CornerRadius="8" Background="White" Width="80" Height="40">
-                    <xctk:MaskedTextBox Name="TimeEndBox" Mask="00:00:00" PromptChar="0" Text="18:00:00"
+                    <xctk:MaskedTextBox Name="TimeEndBox" Mask="00:00:00" PromptChar="0" Text="18:00:00" 
+                                        LostFocus="TimeEndBox_LostFocus"
                                         FontSize="16" VerticalContentAlignment="Center" HorizontalAlignment="Stretch" BorderThickness="0"
                                         IsEnabled="{Binding IsChecked, ElementName=EnableTimeInputCheckBox}">
                         <xctk:MaskedTextBox.Style>
