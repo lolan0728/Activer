@@ -12,7 +12,7 @@
 
     <Border CornerRadius="8" Background="#AAFFFFFF" Padding="10">
         <StackPanel>
-            <TextBlock x:Name="VersionText" Text="Activer v1.0" 
+            <TextBlock x:Name="VersionText" Text="Activer v1.0.1" 
                        FontSize="16" FontWeight="Bold" Foreground="Black" TextAlignment="Center"/>
             <TextBlock x:Name="AuthorText" Text="Author: Eos Lolan" 
                        FontSize="14" Foreground="Black" TextAlignment="Center"/>
