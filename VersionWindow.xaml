@@ -4,7 +4,7 @@
         WindowStyle="None" 
         AllowsTransparency="True" 
         Background="Transparent"
-        Width="250" Height="80"
+        Width="350" Height="80"
         Topmost="True"
         ShowInTaskbar="False"
         Opacity="0"
@@ -16,7 +16,7 @@
                        FontSize="16" FontWeight="Bold" Foreground="Black" TextAlignment="Center"/>
             <TextBlock x:Name="AuthorText" Text="Author: Eos Lolan" 
                        FontSize="14" Foreground="Black" TextAlignment="Center"/>
-            <TextBlock x:Name="CopyrightText" Text="© 2025 Eos Lolan. All rights reserved." 
+            <TextBlock x:Name="CopyrightText" Text="© 2025 Eos Lolan. Licensed under the MIT License." 
                        FontSize="14" Foreground="Black" TextAlignment="Center"/>
         </StackPanel>
     </Border>
