@@ -8,11 +8,6 @@
     <UseWPF>true</UseWPF>
     <StartupObject></StartupObject>
     <ApplicationIcon>Resources\activer.ico</ApplicationIcon>
-	<PublishSingleFile>true</PublishSingleFile>
-	<SelfContained>true</SelfContained>
-	<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
-	<PublishTrimmed>false</PublishTrimmed>
-	<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
   </PropertyGroup>
 
   <ItemGroup>
