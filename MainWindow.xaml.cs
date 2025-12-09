@@ -26,6 +26,10 @@ namespace Activer
 
         private DateTime? targetEndTime = null;
 
+        // -------------------- New control variables --------------------
+        private DateTime lastActionTime;
+        private int nextIntervalSeconds;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -217,10 +221,10 @@ namespace Activer
             if (timer == null)
             {
                 timer = new DispatcherTimer();
+                timer.Interval = TimeSpan.FromSeconds(1); // Check every second
                 timer.Tick += Timer_Tick;
             }
 
-            timer.Stop();
             runTimeTimer.Start();
 
             if (EnableTimeInputCheckBox.IsChecked == true &&
@@ -242,16 +246,13 @@ namespace Activer
             logWindow.UpdateEndTime(targetEndTime);
             logWindow.AppendLog($"[{startTime:HH:mm:ss}] Activity started at {startTime:HH:mm:ss}");
 
-            // -----------------------
-            // Optimize initial idle waiting
-            int idleSeconds = ParsePositiveInt(IdleSecondsBox.Text, 30);
-            int currentIdle = GetIdleSeconds();
-            int firstInterval = Math.Max(idleSeconds - currentIdle, 0);
+            // -------------------- Initialize action timer --------------------
+            lastActionTime = DateTime.Now;
+            nextIntervalSeconds = random.Next(ParsePositiveInt(IntervalMinBox.Text, 10),
+                                              ParsePositiveInt(IntervalMaxBox.Text, 60) + 1);
 
-            timer.Interval = TimeSpan.FromSeconds(firstInterval);
             timer.Start();
-
-            logWindow.AppendLog($"[{DateTime.Now:HH:mm:ss}] Next activity in {firstInterval} seconds (waiting idle)");
+            logWindow.AppendLog($"[{DateTime.Now:HH:mm:ss}] Next activity in {nextIntervalSeconds} seconds");
         }
 
         private void StartStopButton_Unchecked(object sender, RoutedEventArgs e)
@@ -284,25 +285,28 @@ namespace Activer
 
         private void Timer_Tick(object sender, EventArgs e)
         {
-            int idleSeconds = ParsePositiveInt(IdleSecondsBox.Text, 30);
-            if (GetIdleSeconds() >= idleSeconds)
+            int idleSeconds = GetIdleSeconds();
+
+            if (idleSeconds == 0)
+            {
+                // User operated mouse/keyboard
+                lastActionTime = DateTime.Now;
+                logWindow.AppendLog($"[{DateTime.Now:HH:mm:ss}] User activity detected, resetting idle timer");
+                return;
+            }
+
+            // Check if it's time for next action
+            if ((DateTime.Now - lastActionTime).TotalSeconds >= nextIntervalSeconds)
             {
                 PerformActivity();
-                ScheduleNextTick();
+                lastActionTime = DateTime.Now;
+
+                // Calculate next interval
+                nextIntervalSeconds = random.Next(ParsePositiveInt(IntervalMinBox.Text, 10),
+                                                  ParsePositiveInt(IntervalMaxBox.Text, 60) + 1);
+
+                logWindow.AppendLog($"[{DateTime.Now:HH:mm:ss}] Next activity in {nextIntervalSeconds} seconds");
             }
-        }
-
-        private void ScheduleNextTick()
-        {
-            int min = ParsePositiveInt(IntervalMinBox.Text, 10);
-            int max = ParsePositiveInt(IntervalMaxBox.Text, 60);
-            if (min > max) (min, max) = (max, min);
-
-            int interval = random.Next(min, max + 1);
-            timer.Interval = TimeSpan.FromSeconds(interval);
-            timer.Start();
-
-            logWindow.AppendLog($"[{DateTime.Now:HH:mm:ss}] Next activity in {interval} seconds");
         }
 
         private int ParsePositiveInt(string text, int defaultValue)
@@ -345,16 +349,19 @@ namespace Activer
 
             logWindow.AppendLog($"[{nowStr}] Action #{actionCount} - Original position: X={original.X}, Y={original.Y}, Offset=({offsetX},{offsetY})");
 
+            // Smoothly move the mouse
             SmoothMove(original.X, original.Y, original.X + offsetX, original.Y + offsetY, 10, 20);
             SmoothMove(original.X + offsetX, original.Y + offsetY, original.X, original.Y, 10, 20);
 
-            byte[] keys = new byte[] { VK_SHIFT, 0x41, 0x42, 0x43 };
-            byte key = keys[random.Next(keys.Length)];
+            // Randomly press a combo key (Shift, Ctrl, Alt)
+            byte[] comboKeys = new byte[] { 0x10 /*Shift*/, 0x11 /*Ctrl*/, 0x12 /*Alt*/ };
+            byte key = comboKeys[random.Next(comboKeys.Length)];
+
             keybd_event(key, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
             Thread.Sleep(50 + random.Next(50));
             keybd_event(key, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
 
-            logWindow.AppendLog($"[{nowStr}] Action #{actionCount} completed - key {key} pressed and released");
+            logWindow.AppendLog($"[{nowStr}] Action #{actionCount} completed - combo key {key} pressed and released");
         }
 
         private void SmoothMove(int startX, int startY, int endX, int endY, int steps, int delayMs)
