@@ -90,7 +90,11 @@ namespace Activer
         #region Window Closing
         private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            logWindow?.Close();
+            if (logWindow != null)
+            {
+                logWindow.ForceClose = true;
+                logWindow.Close();
+            }
             logWindow = null;
 
             Application.Current.Shutdown();

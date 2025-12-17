@@ -1,13 +1,17 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Windows;
 
 namespace Activer
 {
     public partial class LogWindow : Window
     {
+        public bool ForceClose { get; set; }
+
         public LogWindow()
         {
             InitializeComponent();
+            this.Closing += LogWindow_Closing;
         }
 
         // Append a log entry at the end and scroll to the bottom
@@ -38,6 +42,22 @@ namespace Activer
         private void ClearButton_Click(object sender, RoutedEventArgs e)
         {
             LogTextBox.Clear();
+        }
+
+        private void LogWindow_Closing(object? sender, CancelEventArgs e)
+        {
+            if (!ForceClose)
+            {
+                // not actually close, just hide
+                e.Cancel = true;
+                this.Hide();
+
+                // the main window's Show Log checkbox
+                if (Application.Current.MainWindow is MainWindow main)
+                {
+                    main.ShowLogCheckBox.IsChecked = false;
+                }
+            }
         }
     }
 }
