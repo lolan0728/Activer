@@ -1,8 +1,8 @@
-﻿<Window x:Class="Activer.VersionWindow"
+<Window x:Class="Activer.VersionWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        WindowStyle="None" 
-        AllowsTransparency="True" 
+        WindowStyle="None"
+        AllowsTransparency="True"
         Background="Transparent"
         Width="350" Height="80"
         Topmost="True"
@@ -12,12 +12,22 @@
 
     <Border CornerRadius="8" Background="#AAFFFFFF" Padding="10">
         <StackPanel>
-            <TextBlock x:Name="VersionText" Text="Activer v1.0.3" 
-                       FontSize="16" FontWeight="Bold" Foreground="Black" TextAlignment="Center"/>
-            <TextBlock x:Name="AuthorText" Text="Author: Eos Lolan" 
-                       FontSize="14" Foreground="Black" TextAlignment="Center"/>
-            <TextBlock x:Name="CopyrightText" Text="© 2025 Eos Lolan. Licensed under the MIT License." 
-                       FontSize="14" Foreground="Black" TextAlignment="Center"/>
+            <TextBlock x:Name="VersionText"
+                       Text="{Binding VersionText}"
+                       FontSize="16"
+                       FontWeight="Bold"
+                       Foreground="Black"
+                       TextAlignment="Center"/>
+            <TextBlock x:Name="AuthorText"
+                       Text="{Binding AuthorText}"
+                       FontSize="14"
+                       Foreground="Black"
+                       TextAlignment="Center"/>
+            <TextBlock x:Name="CopyrightText"
+                       Text="{Binding CopyrightText}"
+                       FontSize="14"
+                       Foreground="Black"
+                       TextAlignment="Center"/>
         </StackPanel>
     </Border>
 </Window>

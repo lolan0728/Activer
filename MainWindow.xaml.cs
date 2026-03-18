@@ -1,366 +1,223 @@
-﻿using System;
-using System.Globalization;
+using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Input;
-using System.Windows.Threading;
 using System.Windows.Interop;
+using System.Windows.Data;
+using Activer.Core.Engine;
+using Activer.Core.Services;
+using Activer.Services;
+using Activer.ViewModels;
 
-namespace Activer
+namespace Activer;
+
+public partial class MainWindow : Window
 {
-    public partial class MainWindow : Window
+    private readonly MainViewModel viewModel;
+    private readonly Win32IdleService idleService;
+    private readonly LogWindow logWindow;
+    private VersionWindow? currentVersionWindow;
+
+    public MainWindow()
     {
-        private DispatcherTimer timer;
-        private Random random = new Random();
-        private int actionCount = 0;
-        private LogWindow? logWindow;
-        private VersionWindow? currentVersionWindow = null;
+        InitializeComponent();
 
-        private DispatcherTimer runTimeTimer;
-        private DateTime startTime;
-        private DateTime? targetEndTime = null;
+        var clock = new SystemClock();
+        var randomSource = new RandomSource();
+        var engine = new ActivitySessionEngine(clock, randomSource);
+        var logViewModel = new LogViewModel();
+        var versionViewModel = new VersionViewModel();
+        idleService = new Win32IdleService();
 
-        // -------------------- Action timing --------------------
-        private DateTime lastActionTime;
-        private int nextIntervalSeconds;
+        viewModel = new MainViewModel(
+            engine,
+            idleService,
+            new Win32ActivityPerformer(),
+            new DispatcherTimerFactory(),
+            logViewModel,
+            versionViewModel);
 
-        public MainWindow()
+        DataContext = viewModel;
+
+        logWindow = new LogWindow
         {
-            InitializeComponent();
+            DataContext = logViewModel,
+        };
 
-            Loaded += MainWindow_Loaded;
+        Loaded += MainWindow_Loaded;
+        Closing += MainWindow_Closing;
+        viewModel.PropertyChanged += ViewModel_PropertyChanged;
+        viewModel.ShowVersionRequested += ViewModel_ShowVersionRequested;
+        viewModel.CloseRequested += ViewModel_CloseRequested;
+    }
 
-            logWindow = new LogWindow();
+    #region Window Shadow & Dragging
+    private void TopBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ButtonState == MouseButtonState.Pressed)
+        {
+            DragMove();
+        }
+    }
+
+    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        var hwnd = new WindowInteropHelper(this).Handle;
+        var val = 2;
+        DwmSetWindowAttribute(hwnd, 2, ref val, sizeof(int));
+        var margins = new MARGINS { cxLeftWidth = 0, cxRightWidth = 0, cyTopHeight = 1, cyBottomHeight = 0 };
+        DwmExtendFrameIntoClientArea(hwnd, ref margins);
+
+        if (logWindow.Owner is null)
+        {
+            logWindow.Owner = this;
+        }
+    }
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref MARGINS pMarInset);
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MARGINS
+    {
+        public int cxLeftWidth;
+        public int cxRightWidth;
+        public int cyTopHeight;
+        public int cyBottomHeight;
+    }
+    #endregion
+
+    #region Window Closing
+    private void MainWindow_Closing(object? sender, CancelEventArgs e)
+    {
+        viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        viewModel.ShowVersionRequested -= ViewModel_ShowVersionRequested;
+        viewModel.CloseRequested -= ViewModel_CloseRequested;
+        viewModel.Dispose();
+        idleService.Dispose();
+
+        logWindow.ForceClose = true;
+        logWindow.Close();
+
+        Application.Current.Shutdown();
+    }
+    #endregion
+
+    #region ViewModel Interaction
+    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainViewModel.CanShowLog))
+        {
+            UpdateLogWindowVisibility();
+        }
+    }
+
+    private void ViewModel_ShowVersionRequested(object? sender, EventArgs e)
+    {
+        if (currentVersionWindow is not null)
+        {
+            return;
+        }
+
+        currentVersionWindow = new VersionWindow(viewModel.Version);
+        currentVersionWindow.Owner = this;
+        currentVersionWindow.Closed += (_, _) => currentVersionWindow = null;
+        currentVersionWindow.Show();
+    }
+
+    private void ViewModel_CloseRequested(object? sender, EventArgs e)
+    {
+        Close();
+    }
+
+    private void UpdateLogWindowVisibility()
+    {
+        if (!viewModel.CanShowLog)
+        {
             logWindow.Hide();
-
-            ShowLogCheckBox.Checked += ShowLogCheckBox_Checked;
-            ShowLogCheckBox.Unchecked += ShowLogCheckBox_Unchecked;
-
-            runTimeTimer = new DispatcherTimer();
-            runTimeTimer.Interval = TimeSpan.FromSeconds(1);
-            runTimeTimer.Tick += RunTimeTimer_Tick;
-
-            StartStopButton.Checked += StartStopButton_Checked;
-            StartStopButton.Unchecked += StartStopButton_Unchecked;
-
-            this.Closing += MainWindow_Closing;
+            return;
         }
 
-        #region Window Shadow & Dragging
-        private void TopBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        var logLeft = Left + Width + 10;
+        var logTop = Top;
+        var screenWidth = SystemParameters.WorkArea.Width;
+        var screenHeight = SystemParameters.WorkArea.Height;
+
+        if (logLeft + logWindow.Width > screenWidth)
         {
-            if (e.ButtonState == MouseButtonState.Pressed)
-                DragMove();
+            logLeft = Math.Max(0, Left - logWindow.Width - 10);
         }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        if (logTop + logWindow.Height > screenHeight)
         {
-            this.Close();
+            logTop = screenHeight - logWindow.Height;
         }
 
-        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
-        {
-            var hwnd = new WindowInteropHelper(this).Handle;
-            int val = 2;
-            DwmSetWindowAttribute(hwnd, 2, ref val, sizeof(int));
-            var margins = new MARGINS() { cxLeftWidth = 0, cxRightWidth = 0, cyTopHeight = 1, cyBottomHeight = 0 };
-            DwmExtendFrameIntoClientArea(hwnd, ref margins);
-        }
-
-        [DllImport("dwmapi.dll")]
-        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int attrValue, int attrSize);
-
-        [DllImport("dwmapi.dll")]
-        private static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref MARGINS pMarInset);
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct MARGINS
-        {
-            public int cxLeftWidth;
-            public int cxRightWidth;
-            public int cyTopHeight;
-            public int cyBottomHeight;
-        }
-        #endregion
-
-        #region Window Closing
-        private void MainWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-        {
-            if (logWindow != null)
-            {
-                logWindow.ForceClose = true;
-                logWindow.Close();
-            }
-            logWindow = null;
-
-            Application.Current.Shutdown();
-        }
-        #endregion
-
-        #region Version Window
-        private void VersionButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (currentVersionWindow != null) return;
-
-            currentVersionWindow = new VersionWindow();
-            currentVersionWindow.Closed += (s, args) => currentVersionWindow = null;
-            currentVersionWindow.Show();
-        }
-        #endregion
-
-        #region Show Log Window
-        private void ShowLogCheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            if (logWindow == null) return;
-
-            double logLeft = this.Left + this.Width + 10;
-            double logTop = this.Top;
-
-            var screenWidth = SystemParameters.WorkArea.Width;
-            var screenHeight = SystemParameters.WorkArea.Height;
-
-            if (logLeft + logWindow.Width > screenWidth)
-                logLeft = Math.Max(0, this.Left - logWindow.Width - 10);
-
-            if (logTop + logWindow.Height > screenHeight)
-                logTop = screenHeight - logWindow.Height;
-
-            logWindow.Left = logLeft;
-            logWindow.Top = logTop;
-            logWindow.Topmost = true;
-            logWindow.Show();
-        }
-
-        private void ShowLogCheckBox_Unchecked(object sender, RoutedEventArgs e)
-        {
-            logWindow?.Hide();
-        }
-        #endregion
-
-        #region Number Input Validation
-        private void NumberOnly(object sender, TextCompositionEventArgs e)
-        {
-            if (sender is not TextBox tb) { e.Handled = true; return; }
-            if (!e.Text.All(char.IsDigit)) { e.Handled = true; return; }
-
-            string newText = tb.Text.Insert(tb.SelectionStart, e.Text);
-            if (string.IsNullOrEmpty(newText)) { e.Handled = false; return; }
-
-            if (!int.TryParse(newText, out int value) || value < 1 || value > 999)
-                e.Handled = true;
-            else
-                e.Handled = false;
-        }
-
-        private void NumberBox_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (sender is TextBox tb)
-            {
-                if (!int.TryParse(tb.Text, out int value) || value < 1)
-                    tb.Text = "1";
-                else if (value > 999)
-                    tb.Text = "999";
-            }
-        }
-
-        private void IntervalBox_LostFocus(object sender, RoutedEventArgs e)
-        {
-            int min = int.TryParse(IntervalMinBox.Text, out int mn) ? mn : 1;
-            int max = int.TryParse(IntervalMaxBox.Text, out int mx) ? mx : 1;
-
-            min = Math.Clamp(min, 1, 999);
-            max = Math.Clamp(max, 1, 999);
-            if (min > max) (min, max) = (max, min);
-
-            IntervalMinBox.Text = min.ToString();
-            IntervalMaxBox.Text = max.ToString();
-        }
-
-        private void TimeEndBox_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (sender is not Xceed.Wpf.Toolkit.MaskedTextBox tb) return;
-
-            var parts = tb.Text.Split(':');
-            if (parts.Length != 3) { tb.Text = "00:00:00"; return; }
-
-            int h = int.TryParse(parts[0], out int hh) ? hh : 0;
-            int m = int.TryParse(parts[1], out int mm) ? mm : 0;
-            int s = int.TryParse(parts[2], out int ss) ? ss : 0;
-
-            tb.Text = $"{Math.Clamp(h, 0, 23):00}:{Math.Clamp(m, 0, 59):00}:{Math.Clamp(s, 0, 59):00}";
-        }
-        #endregion
-
-        #region Start/Stop Timer & RunTime
-        private void StartStopButton_Checked(object sender, RoutedEventArgs e)
-        {
-            startTime = DateTime.Now;
-            actionCount = 0;
-
-            if (timer == null)
-            {
-                timer = new DispatcherTimer();
-                timer.Interval = TimeSpan.FromSeconds(1);
-                timer.Tick += Timer_Tick;
-            }
-
-            runTimeTimer.Start();
-
-            // 设置目标结束时间
-            if (EnableTimeInputCheckBox.IsChecked == true &&
-                !string.IsNullOrWhiteSpace(TimeEndBox.Text) &&
-                DateTime.TryParse(TimeEndBox.Text, out DateTime parsedTime))
-            {
-                DateTime now = DateTime.Now;
-                DateTime todayEndTime = new DateTime(now.Year, now.Month, now.Day,
-                                                    parsedTime.Hour, parsedTime.Minute, parsedTime.Second);
-                if (now >= todayEndTime) todayEndTime = todayEndTime.AddDays(1);
-
-                targetEndTime = todayEndTime;
-            }
-            else
-            {
-                targetEndTime = null;
-            }
-
-            logWindow.UpdateEndTime(targetEndTime);
-            logWindow.AppendLog($"[{startTime:HH:mm:ss}] Activity started");
-
-            // 初始化动作定时器
-            lastActionTime = DateTime.Now;
-            nextIntervalSeconds = random.Next(ParsePositiveInt(IntervalMinBox.Text, 10),
-                                              ParsePositiveInt(IntervalMaxBox.Text, 60) + 1);
-
-            timer.Start();
-            logWindow.AppendLog($"[{DateTime.Now:HH:mm:ss}] Next activity in {nextIntervalSeconds} seconds");
-        }
-
-        private void StartStopButton_Unchecked(object sender, RoutedEventArgs e)
-        {
-            timer?.Stop();
-            runTimeTimer.Stop();
-            targetEndTime = null;
-            logWindow.UpdateEndTime(null);
-
-            TimeSpan totalRunTime = DateTime.Now - startTime;
-            logWindow.AppendLog($"[{DateTime.Now:HH:mm:ss}] Activity stopped, total run time: {totalRunTime:hh\\:mm\\:ss}");
-            logWindow.UpdateRunTime(totalRunTime);
-        }
-
-        private void RunTimeTimer_Tick(object sender, EventArgs e)
-        {
-            if (StartStopButton.IsChecked != true) return;
-
-            TimeSpan runTime = DateTime.Now - startTime;
-            logWindow.UpdateRunTime(runTime);
-
-            if (targetEndTime.HasValue && DateTime.Now >= targetEndTime.Value)
-            {
-                StartStopButton.IsChecked = false;
-                logWindow.AppendLog(
-                    $"[{DateTime.Now:HH:mm:ss}] Reached end time ({targetEndTime:yyyy/MM/dd HH:mm:ss}), stopping activity automatically.");
-            }
-        }
-
-        private int ParsePositiveInt(string text, int defaultValue)
-        {
-            return int.TryParse(text, out int value) && value > 0 ? value : defaultValue;
-        }
-        #endregion
-
-        #region Win32 API for Idle & Mouse
-        [DllImport("user32.dll")] private static extern bool GetCursorPos(out POINT lpPoint);
-        [DllImport("user32.dll")] private static extern bool SetCursorPos(int X, int Y);
-        [DllImport("user32.dll")] private static extern bool GetLastInputInfo(ref LASTINPUTINFO plii);
-        [DllImport("user32.dll")] private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
-
-        private const int KEYEVENTF_KEYDOWN = 0x0000;
-        private const int KEYEVENTF_KEYUP = 0x0002;
-
-        [StructLayout(LayoutKind.Sequential)] private struct POINT { public int X; public int Y; }
-        [StructLayout(LayoutKind.Sequential)] private struct LASTINPUTINFO { public uint cbSize; public uint dwTime; }
-
-        private int GetIdleSeconds()
-        {
-            LASTINPUTINFO lastInput = new LASTINPUTINFO { cbSize = (uint)Marshal.SizeOf<LASTINPUTINFO>() };
-            GetLastInputInfo(ref lastInput);
-            return (int)((Environment.TickCount - lastInput.dwTime) / 1000);
-        }
-
-        private void Timer_Tick(object sender, EventArgs e)
-        {
-            int idleSeconds = GetIdleSeconds();
-
-            if (idleSeconds == 0)
-            {
-                lastActionTime = DateTime.Now;
-                logWindow.AppendLog($"[{DateTime.Now:HH:mm:ss}] User activity detected, resetting idle timer");
-                return;
-            }
-
-            if ((DateTime.Now - lastActionTime).TotalSeconds >= nextIntervalSeconds)
-            {
-                PerformActivity();
-                lastActionTime = DateTime.Now;
-                nextIntervalSeconds = random.Next(ParsePositiveInt(IntervalMinBox.Text, 10),
-                                                  ParsePositiveInt(IntervalMaxBox.Text, 60) + 1);
-                logWindow.AppendLog($"[{DateTime.Now:HH:mm:ss}] Next activity in {nextIntervalSeconds} seconds");
-            }
-        }
-
-        private void PerformActivity()
-        {
-            if (!GetCursorPos(out POINT original)) return;
-
-            actionCount++;
-            string nowStr = DateTime.Now.ToString("HH:mm:ss");
-
-            int offsetX = random.Next(-10, 11);
-            int offsetY = random.Next(-10, 11);
-
-            logWindow.AppendLog($"[{nowStr}] Action #{actionCount} - Original position: X={original.X}, Y={original.Y}, Offset=({offsetX},{offsetY})");
-
-            SmoothMove(original.X, original.Y, original.X + offsetX, original.Y + offsetY, 10, 20);
-            SmoothMove(original.X + offsetX, original.Y + offsetY, original.X, original.Y, 10, 20);
-
-            byte[] comboKeys = new byte[] { 0x10 /*Shift*/, 0x11 /*Ctrl*/, 0x12 /*Alt*/ };
-            byte key = comboKeys[random.Next(comboKeys.Length)];
-
-            keybd_event(key, 0, KEYEVENTF_KEYDOWN, UIntPtr.Zero);
-            Thread.Sleep(50 + random.Next(50));
-            keybd_event(key, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
-
-            logWindow.AppendLog($"[{nowStr}] Action #{actionCount} completed - combo key {key} pressed and released");
-        }
-
-        private void SmoothMove(int startX, int startY, int endX, int endY, int steps, int delayMs)
-        {
-            for (int i = 1; i <= steps; i++)
-            {
-                int x = startX + (endX - startX) * i / steps;
-                int y = startY + (endY - startY) * i / steps;
-                SetCursorPos(x, y);
-                Thread.Sleep(delayMs);
-            }
-        }
-        #endregion
+        logWindow.Left = logLeft;
+        logWindow.Top = logTop;
+        logWindow.Topmost = true;
+        logWindow.Show();
     }
+    #endregion
 
-    public class StartStopConverter : IValueConverter
+    #region Input Validation
+    private void NumberOnly(object sender, TextCompositionEventArgs e)
     {
-        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        if (sender is not TextBox textBox)
         {
-            bool isChecked = value is bool b && b;
-            return isChecked ? "Stop" : "Start";
+            e.Handled = true;
+            return;
         }
 
-        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        if (!e.Text.All(char.IsDigit))
         {
-            return Binding.DoNothing;
+            e.Handled = true;
+            return;
         }
+
+        var newText = textBox.Text.Insert(textBox.SelectionStart, e.Text);
+        if (string.IsNullOrEmpty(newText))
+        {
+            e.Handled = false;
+            return;
+        }
+
+        e.Handled = !int.TryParse(newText, out var value) || value < 1 || value > 999;
     }
+
+    private void IntervalBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        viewModel.NormalizeIntervalInputs();
+        RefreshBinding(IntervalMinBox, TextBox.TextProperty);
+        RefreshBinding(IntervalMaxBox, TextBox.TextProperty);
+    }
+
+    private void NumberBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        viewModel.NormalizeIdleInput();
+        RefreshBinding(sender, TextBox.TextProperty);
+    }
+
+    private void TimeEndBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        viewModel.NormalizeEndTimeInput();
+        RefreshBinding(sender, Xceed.Wpf.Toolkit.MaskedTextBox.TextProperty);
+    }
+
+    private static void RefreshBinding(object sender, DependencyProperty dependencyProperty)
+    {
+        if (sender is not DependencyObject dependencyObject)
+        {
+            return;
+        }
+
+        var binding = BindingOperations.GetBindingExpression(dependencyObject, dependencyProperty);
+        binding?.UpdateTarget();
+    }
+    #endregion
 }

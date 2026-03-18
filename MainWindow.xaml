@@ -1,8 +1,7 @@
-﻿<Window x:Class="Activer.MainWindow"
+<Window x:Class="Activer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
-        xmlns:local="clr-namespace:Activer"
         Title="Activer"
         Width="250" Height="390"
         ResizeMode="NoResize"
@@ -11,10 +10,6 @@
         Background="White">
 
     <Window.Resources>
-        <!-- Start / Stop Converter -->
-        <local:StartStopConverter x:Key="StartStopConverter"/>
-
-        <!-- Watermark TextBox Style -->
         <Style x:Key="WatermarkTextBox" TargetType="TextBox">
             <Setter Property="Foreground" Value="Black"/>
             <Setter Property="Background" Value="White"/>
@@ -69,7 +64,6 @@
             </Setter>
         </Style>
 
-        <!-- MacOS-style ToggleButton Style -->
         <Style x:Key="MacOSToggleButton" TargetType="ToggleButton">
             <Setter Property="Height" Value="50"/>
             <Setter Property="FontSize" Value="18"/>
@@ -88,7 +82,7 @@
                                 Padding="5"
                                 SnapsToDevicePixels="True">
                             <ContentPresenter HorizontalAlignment="Center"
-                                              VerticalAlignment="Center" />
+                                              VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="False">
@@ -100,7 +94,6 @@
                                         </LinearGradientBrush>
                                     </Setter.Value>
                                 </Setter>
-                                <Setter Property="Content" Value="Start"/>
                             </Trigger>
                             <MultiTrigger>
                                 <MultiTrigger.Conditions>
@@ -126,7 +119,6 @@
                                         </LinearGradientBrush>
                                     </Setter.Value>
                                 </Setter>
-                                <Setter Property="Content" Value="Stop"/>
                             </Trigger>
                             <MultiTrigger>
                                 <MultiTrigger.Conditions>
@@ -153,40 +145,40 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="35"/>
-            <!-- TopBar -->
             <RowDefinition Height="*"/>
-            <!-- Main Content -->
         </Grid.RowDefinitions>
 
-        <!-- Custom TopBar -->
         <Grid Height="30" VerticalAlignment="Top" Background="Transparent" MouseLeftButtonDown="TopBar_MouseLeftButtonDown">
-            <!-- Title Text -->
             <TextBlock Text="Activer"
-               HorizontalAlignment="Center"
-               VerticalAlignment="Center"
-               FontWeight="Bold"
-               FontSize="16"
-               Foreground="Black"/>
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       FontWeight="Bold"
+                       FontSize="16"
+                       Foreground="Black"/>
 
-            <!-- Close Button -->
-            <Button Width="15" Height="15" HorizontalAlignment="Right" Margin="0,6,10,3"
-        Click="CloseButton_Click" Background="Transparent" BorderThickness="0" Padding="0"
-        Cursor="Hand">
+            <Button Width="15"
+                    Height="15"
+                    HorizontalAlignment="Right"
+                    Margin="0,6,10,3"
+                    Command="{Binding CloseCommand}"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Padding="0"
+                    Cursor="Hand">
                 <Button.Template>
                     <ControlTemplate TargetType="Button">
                         <Grid>
-                            <!-- X Shape, default dark gray -->
-                            <Path x:Name="XPath" Stroke="#555555" StrokeThickness="2" Stretch="Uniform"
-                      Data="M0,0 L1,1 M1,0 L0,1"/>
+                            <Path x:Name="XPath"
+                                  Stroke="#555555"
+                                  StrokeThickness="2"
+                                  Stretch="Uniform"
+                                  Data="M0,0 L1,1 M1,0 L0,1"/>
                         </Grid>
                         <ControlTemplate.Triggers>
-                            <!-- Mouse hover changes to dark red -->
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="XPath" Property="Stroke" Value="#B22222"/>
-                                <!-- Dark red -->
                                 <Setter Property="Background" Value="Transparent"/>
                             </Trigger>
-                            <!-- Mouse pressed keeps transparent -->
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter Property="Background" Value="Transparent"/>
                             </Trigger>
@@ -196,7 +188,6 @@
             </Button>
         </Grid>
 
-        <!-- Main Content Grid -->
         <Grid Grid.Row="1" Margin="10">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -206,7 +197,6 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- Action Interval Inputs -->
             <GroupBox Header="Action Interval (Seconds)" Margin="0,5,0,5" Padding="5" HorizontalAlignment="Stretch" Grid.Row="0">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -215,15 +205,24 @@
                         <ColumnDefinition Width="80"/>
                     </Grid.ColumnDefinitions>
 
-                    <TextBox Name="IntervalMinBox" Style="{StaticResource WatermarkTextBox}" Tag="Min" Text="10" LostFocus="IntervalBox_LostFocus"
-                             PreviewTextInput="NumberOnly" Grid.Column="0"/>
+                    <TextBox Name="IntervalMinBox"
+                             Style="{StaticResource WatermarkTextBox}"
+                             Tag="Min"
+                             Text="{Binding IntervalMin, UpdateSourceTrigger=PropertyChanged}"
+                             LostFocus="IntervalBox_LostFocus"
+                             PreviewTextInput="NumberOnly"
+                             Grid.Column="0"/>
                     <TextBlock Text="~" VerticalAlignment="Center" HorizontalAlignment="Center" Grid.Column="1"/>
-                    <TextBox Name="IntervalMaxBox" Style="{StaticResource WatermarkTextBox}" Tag="Max" Text="60" LostFocus="IntervalBox_LostFocus"
-                             PreviewTextInput="NumberOnly" Grid.Column="2"/>
+                    <TextBox Name="IntervalMaxBox"
+                             Style="{StaticResource WatermarkTextBox}"
+                             Tag="Max"
+                             Text="{Binding IntervalMax, UpdateSourceTrigger=PropertyChanged}"
+                             LostFocus="IntervalBox_LostFocus"
+                             PreviewTextInput="NumberOnly"
+                             Grid.Column="2"/>
                 </Grid>
             </GroupBox>
 
-            <!-- Idle Trigger Input -->
             <GroupBox Header="Trigger only if idle > (Seconds):" Margin="0,5,0,5" Padding="5" HorizontalAlignment="Stretch" Grid.Row="1">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -231,16 +230,23 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBox Name="IdleSecondsBox" Style="{StaticResource WatermarkTextBox}" Tag="Seconds" Text="60" LostFocus="NumberBox_LostFocus"
-                             PreviewTextInput="NumberOnly" Grid.Column="0"/>
+                    <TextBox Name="IdleSecondsBox"
+                             Style="{StaticResource WatermarkTextBox}"
+                             Tag="Seconds"
+                             Text="{Binding IdleSeconds, UpdateSourceTrigger=PropertyChanged}"
+                             LostFocus="NumberBox_LostFocus"
+                             PreviewTextInput="NumberOnly"
+                             Grid.Column="0"/>
                 </Grid>
             </GroupBox>
 
-            <!-- End Time Input -->
             <GroupBox Margin="0,5,0,10" Padding="5" HorizontalAlignment="Stretch" Grid.Row="2">
                 <GroupBox.Header>
                     <StackPanel Orientation="Horizontal">
-                        <CheckBox x:Name="EnableTimeInputCheckBox" VerticalAlignment="Center" Margin="0,0,5,0" IsChecked="True"/>
+                        <CheckBox x:Name="EnableTimeInputCheckBox"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,5,0"
+                                  IsChecked="{Binding IsEndTimeEnabled, Mode=TwoWay}"/>
                         <TextBlock Text="End time (HH:MM:SS)" VerticalAlignment="Center" FontWeight="Bold"/>
                     </StackPanel>
                 </GroupBox.Header>
@@ -253,9 +259,15 @@
                     </Grid.ColumnDefinitions>
 
                     <Border Grid.Column="0" BorderBrush="#888" BorderThickness="1" Background="White" Width="80" Height="40">
-                        <xctk:MaskedTextBox Name="TimeEndBox" Mask="00:00:00" PromptChar="0" Text="18:00:00" 
+                        <xctk:MaskedTextBox Name="TimeEndBox"
+                                            Mask="00:00:00"
+                                            PromptChar="0"
+                                            Text="{Binding EndTimeText, UpdateSourceTrigger=PropertyChanged}"
                                             LostFocus="TimeEndBox_LostFocus"
-                                            FontSize="16" VerticalContentAlignment="Center" HorizontalAlignment="Stretch" BorderThickness="0"
+                                            FontSize="16"
+                                            VerticalContentAlignment="Center"
+                                            HorizontalAlignment="Stretch"
+                                            BorderThickness="0"
                                             IsEnabled="{Binding IsChecked, ElementName=EnableTimeInputCheckBox}">
                             <xctk:MaskedTextBox.Style>
                                 <Style TargetType="xctk:MaskedTextBox" BasedOn="{StaticResource WatermarkTextBox}"/>
@@ -265,14 +277,16 @@
                 </Grid>
             </GroupBox>
 
-            <!-- Show Log and Version Info -->
             <Grid Grid.Row="3" Margin="0,5,0,10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <CheckBox x:Name="ShowLogCheckBox" Content="Show Log Window" VerticalAlignment="Center"/>
+                <CheckBox x:Name="ShowLogCheckBox"
+                          Content="Show Log Window"
+                          VerticalAlignment="Center"
+                          IsChecked="{Binding CanShowLog, Mode=TwoWay}"/>
                 <Button Grid.Column="1"
                         Content="Version Info"
                         Width="80"
@@ -285,11 +299,15 @@
                         BorderThickness="0"
                         Cursor="Arrow"
                         Padding="2"
-                        Click="VersionButton_Click"/>
+                        Command="{Binding ShowVersionCommand}"/>
             </Grid>
 
-            <!-- Start / Stop Toggle Button -->
-            <ToggleButton Grid.Row="4" x:Name="StartStopButton" Style="{StaticResource MacOSToggleButton}"/>
+            <ToggleButton Grid.Row="4"
+                          x:Name="StartStopButton"
+                          Style="{StaticResource MacOSToggleButton}"
+                          IsChecked="{Binding IsRunning, Mode=TwoWay}"
+                          Content="{Binding StartStopText}"
+                          Command="{Binding StartStopCommand}"/>
         </Grid>
     </Grid>
 </Window>

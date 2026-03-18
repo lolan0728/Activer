@@ -7,12 +7,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <StartupObject></StartupObject>
+    <Version>1.1</Version>
+    <AssemblyVersion>1.1</AssemblyVersion>
+    <FileVersion>1.1</FileVersion>
+    <Company>Eos Lolan</Company>
+    <Authors>Eos Lolan</Authors>
+    <Copyright>© 2025 Eos Lolan. Licensed under the MIT License.</Copyright>
     <ApplicationIcon>Resources\activer.ico</ApplicationIcon>
-	<PublishSingleFile>true</PublishSingleFile>
-	<SelfContained>true</SelfContained>
-	<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
-	<PublishTrimmed>false</PublishTrimmed>
-	<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,6 +26,19 @@
 
   <ItemGroup>
     <PackageReference Include="Extended.Wpf.Toolkit" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="Activer.Core\Activer.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Activer.Core\**\*.cs" />
+    <Compile Remove="Activer.Core.Tests\**\*" />
+    <EmbeddedResource Remove="Activer.Core\**\*" />
+    <EmbeddedResource Remove="Activer.Core.Tests\**\*" />
+    <None Remove="Activer.Core\**\*" />
+    <None Remove="Activer.Core.Tests\**\*" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,3 +1,5 @@
 <Solution>
+  <Project Path="Activer.Core\Activer.Core.csproj" />
   <Project Path="Activer.csproj" />
+  <Project Path="Activer.Core.Tests\Activer.Core.Tests.csproj" />
 </Solution>

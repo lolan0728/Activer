@@ -1,62 +1,58 @@
-﻿using System;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Windows;
+using Activer.ViewModels;
 
-namespace Activer
+namespace Activer;
+
+public partial class LogWindow : Window
 {
-    public partial class LogWindow : Window
+    public bool ForceClose { get; set; }
+
+    public LogWindow()
     {
-        public bool ForceClose { get; set; }
+        InitializeComponent();
+        Closing += LogWindow_Closing;
+        DataContextChanged += LogWindow_DataContextChanged;
+    }
 
-        public LogWindow()
+    private void LogWindow_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.OldValue is LogViewModel oldViewModel)
         {
-            InitializeComponent();
-            this.Closing += LogWindow_Closing;
+            oldViewModel.Entries.CollectionChanged -= Entries_CollectionChanged;
         }
 
-        // Append a log entry at the end and scroll to the bottom
-        public void AppendLog(string text)
+        if (e.NewValue is LogViewModel newViewModel)
         {
-            if (LogTextBox == null) return;
-            LogTextBox.AppendText(text + "\n");
-            LogTextBox.ScrollToEnd();
+            newViewModel.Entries.CollectionChanged += Entries_CollectionChanged;
+        }
+    }
+
+    private void Entries_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.Action != NotifyCollectionChangedAction.Add || e.NewItems is null || e.NewItems.Count == 0)
+        {
+            return;
         }
 
-        // Update the run time display (does not append to log)
-        public void UpdateRunTime(TimeSpan t)
-        {
-            if (RunTimeTextBlock == null) return;
-            RunTimeTextBlock.Text = $"Run time: {t.Hours:D2}:{t.Minutes:D2}:{t.Seconds:D2}";
-        }
+        Dispatcher.BeginInvoke(() => LogListBox.ScrollIntoView(e.NewItems[^1]));
+    }
 
-        // Update the End Time display
-        public void UpdateEndTime(DateTime? endTime)
+    private void LogWindow_Closing(object? sender, CancelEventArgs e)
+    {
+        if (!ForceClose)
         {
-            if (endTime.HasValue)
-                EndTimeTextBlock.Text = $"End Time: {endTime.Value:yyyy/MM/dd HH:mm:ss}";
-            else
-                EndTimeTextBlock.Text = "End Time: --";
-        }
+            e.Cancel = true;
+            Hide();
 
-        // Handle Clear button click
-        private void ClearButton_Click(object sender, RoutedEventArgs e)
-        {
-            LogTextBox.Clear();
-        }
-
-        private void LogWindow_Closing(object? sender, CancelEventArgs e)
-        {
-            if (!ForceClose)
+            if (Owner is MainWindow mainWindow && mainWindow.DataContext is MainViewModel mainViewModel)
             {
-                // not actually close, just hide
-                e.Cancel = true;
-                this.Hide();
-
-                // the main window's Show Log checkbox
-                if (Application.Current.MainWindow is MainWindow main)
-                {
-                    main.ShowLogCheckBox.IsChecked = false;
-                }
+                mainViewModel.CanShowLog = false;
+            }
+            else if (DataContext is LogViewModel logViewModel)
+            {
+                logViewModel.IsVisible = false;
             }
         }
     }
