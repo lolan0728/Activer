@@ -8,6 +8,7 @@ var tests = new (string Name, Action Run)[]
     ("Stop ends session and returns runtime", Stop_EndsSessionAndReturnsFinalRuntime),
     ("Idle threshold gates the first action", Tick_DoesNotTriggerBeforeIdleThreshold),
     ("Idle and interval are both required", Tick_RequiresIdleAndIntervalBeforeTriggeringActivity),
+    ("Zero mouse offset is normalized to a movement", Tick_NormalizesZeroMouseOffset),
     ("Target end time auto-stops the session", Tick_AutoStopsWhenTargetEndTimeIsReached),
     ("Settings normalization clamps and swaps values", ActivitySettings_NormalizesRangesAndInvalidValues),
 };
@@ -75,7 +76,7 @@ static void Stop_EndsSessionAndReturnsFinalRuntime()
 static void Tick_DoesNotTriggerBeforeIdleThreshold()
 {
     var clock = new FakeClock(new DateTime(2026, 3, 18, 10, 0, 0));
-    var engine = new ActivitySessionEngine(clock, new FakeRandomSource(10, 3, 4, 1, 10));
+    var engine = new ActivitySessionEngine(clock, new FakeRandomSource(10, 3, 4, 10));
     engine.Start(ActivitySettings.FromInput("10", "10", "60", false, "18:00:00"));
 
     clock.Advance(TimeSpan.FromSeconds(59));
@@ -93,7 +94,7 @@ static void Tick_DoesNotTriggerBeforeIdleThreshold()
 static void Tick_RequiresIdleAndIntervalBeforeTriggeringActivity()
 {
     var clock = new FakeClock(new DateTime(2026, 3, 18, 10, 0, 0));
-    var engine = new ActivitySessionEngine(clock, new FakeRandomSource(30, 3, 4, 1, 30));
+    var engine = new ActivitySessionEngine(clock, new FakeRandomSource(30, 3, 4, 30));
     engine.Start(ActivitySettings.FromInput("30", "30", "10", false, "18:00:00"));
 
     clock.Advance(TimeSpan.FromSeconds(10));
@@ -111,8 +112,21 @@ static void Tick_RequiresIdleAndIntervalBeforeTriggeringActivity()
     AssertEqual(1, ready.ActionCount, "Action count should increment when the request is created.");
     AssertEqual(3, ready.ExecutionRequest!.OffsetX, "OffsetX should come from the random source.");
     AssertEqual(4, ready.ExecutionRequest.OffsetY, "OffsetY should come from the random source.");
-    AssertEqual("Ctrl", ready.ExecutionRequest.KeyName, "Key name should match the random key choice.");
     AssertEqual(30, ready.NextIntervalSeconds, "A new interval should be scheduled after the action.");
+}
+
+static void Tick_NormalizesZeroMouseOffset()
+{
+    var clock = new FakeClock(new DateTime(2026, 3, 18, 10, 0, 0));
+    var engine = new ActivitySessionEngine(clock, new FakeRandomSource(10, 0, 0, 10));
+    engine.Start(ActivitySettings.FromInput("10", "10", "10", false, "18:00:00"));
+
+    clock.Advance(TimeSpan.FromSeconds(10));
+    var update = engine.Tick(10);
+
+    Assert(update.ExecutionRequest is not null, "The action should trigger once idle and interval are satisfied.");
+    AssertEqual(1, update.ExecutionRequest!.OffsetX, "Zero offset should normalize to a non-zero X movement.");
+    AssertEqual(0, update.ExecutionRequest.OffsetY, "Zero offset normalization should preserve the Y axis.");
 }
 
 static void Tick_AutoStopsWhenTargetEndTimeIsReached()

@@ -8,8 +8,6 @@ namespace Activer.Services;
 public sealed class Win32ActivityPerformer : IActivityPerformer
 {
     private const int InputMouse = 0;
-    private const int InputKeyboard = 1;
-    private const uint KeyEventKeyUp = 0x0002;
     private const uint MouseEventMove = 0x0001;
     private const uint MouseEventAbsolute = 0x8000;
     private const uint MouseEventVirtualDesk = 0x4000;
@@ -38,17 +36,7 @@ public sealed class Win32ActivityPerformer : IActivityPerformer
     private struct INPUT
     {
         public uint type;
-        public InputUnion U;
-    }
-
-    [StructLayout(LayoutKind.Explicit)]
-    private struct InputUnion
-    {
-        [FieldOffset(0)]
         public MOUSEINPUT mi;
-
-        [FieldOffset(0)]
-        public KEYBDINPUT ki;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -57,16 +45,6 @@ public sealed class Win32ActivityPerformer : IActivityPerformer
         public int dx;
         public int dy;
         public uint mouseData;
-        public uint dwFlags;
-        public uint time;
-        public IntPtr dwExtraInfo;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct KEYBDINPUT
-    {
-        public ushort wVk;
-        public ushort wScan;
         public uint dwFlags;
         public uint time;
         public IntPtr dwExtraInfo;
@@ -81,10 +59,6 @@ public sealed class Win32ActivityPerformer : IActivityPerformer
 
         SmoothMove(original.X, original.Y, original.X + request.OffsetX, original.Y + request.OffsetY, 10, 20);
         SmoothMove(original.X + request.OffsetX, original.Y + request.OffsetY, original.X, original.Y, 10, 20);
-
-        SendKeyboardInput(request.VirtualKeyCode, isKeyUp: false);
-        Thread.Sleep(75);
-        SendKeyboardInput(request.VirtualKeyCode, isKeyUp: true);
 
         return new ActivityExecutionResult(true, original.X, original.Y);
     }
@@ -105,32 +79,11 @@ public sealed class Win32ActivityPerformer : IActivityPerformer
         var input = new INPUT
         {
             type = InputMouse,
-            U = new InputUnion
+            mi = new MOUSEINPUT
             {
-                mi = new MOUSEINPUT
-                {
-                    dx = NormalizeToAbsoluteX(x),
-                    dy = NormalizeToAbsoluteY(y),
-                    dwFlags = MouseEventMove | MouseEventAbsolute | MouseEventVirtualDesk,
-                },
-            },
-        };
-
-        SendInput(1, new[] { input }, Marshal.SizeOf<INPUT>());
-    }
-
-    private static void SendKeyboardInput(byte virtualKeyCode, bool isKeyUp)
-    {
-        var input = new INPUT
-        {
-            type = InputKeyboard,
-            U = new InputUnion
-            {
-                ki = new KEYBDINPUT
-                {
-                    wVk = virtualKeyCode,
-                    dwFlags = isKeyUp ? KeyEventKeyUp : 0,
-                },
+                dx = NormalizeToAbsoluteX(x),
+                dy = NormalizeToAbsoluteY(y),
+                dwFlags = MouseEventMove | MouseEventAbsolute | MouseEventVirtualDesk,
             },
         };
 

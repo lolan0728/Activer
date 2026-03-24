@@ -5,13 +5,6 @@ namespace Activer.Core.Engine;
 
 public sealed class ActivitySessionEngine
 {
-    private static readonly (byte KeyCode, string KeyName)[] ComboKeys =
-    {
-        (0x10, "Shift"),
-        (0x11, "Ctrl"),
-        (0x12, "Alt"),
-    };
-
     private readonly IClock clock;
     private readonly IRandomSource randomSource;
 
@@ -97,11 +90,9 @@ public sealed class ActivitySessionEngine
         }
 
         actionCount++;
-        var offsetX = randomSource.Next(-10, 11);
-        var offsetY = randomSource.Next(-10, 11);
-        var comboKey = ComboKeys[randomSource.Next(0, ComboKeys.Length)];
+        var (offsetX, offsetY) = CreateMouseOffset();
 
-        var executionRequest = new ActivityExecutionRequest(actionCount, now, offsetX, offsetY, comboKey.KeyCode, comboKey.KeyName);
+        var executionRequest = new ActivityExecutionRequest(actionCount, now, offsetX, offsetY);
 
         eligibilityAnchorTime = now;
         nextIntervalSeconds = randomSource.Next(settings.IntervalMinSeconds, settings.IntervalMaxSeconds + 1);
@@ -140,5 +131,18 @@ public sealed class ActivitySessionEngine
 
         var todayEndTime = now.Date.Add(settings.EndTimeOfDay.Value);
         return now >= todayEndTime ? todayEndTime.AddDays(1) : todayEndTime;
+    }
+
+    private (int OffsetX, int OffsetY) CreateMouseOffset()
+    {
+        var offsetX = randomSource.Next(-10, 11);
+        var offsetY = randomSource.Next(-10, 11);
+
+        if (offsetX == 0 && offsetY == 0)
+        {
+            return (1, 0);
+        }
+
+        return (offsetX, offsetY);
     }
 }

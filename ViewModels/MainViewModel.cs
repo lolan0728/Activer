@@ -225,7 +225,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             else
             {
                 Log.Append($"[{update.ExecutionRequest.Timestamp:HH:mm:ss}] Action #{update.ExecutionRequest.ActionNumber} - Original position: X={result.OriginalX}, Y={result.OriginalY}, Offset=({update.ExecutionRequest.OffsetX},{update.ExecutionRequest.OffsetY})");
-                Log.Append($"[{update.ExecutionRequest.Timestamp:HH:mm:ss}] Action #{update.ExecutionRequest.ActionNumber} completed - combo key {update.ExecutionRequest.KeyName} pressed and released");
+                Log.Append($"[{update.ExecutionRequest.Timestamp:HH:mm:ss}] Action #{update.ExecutionRequest.ActionNumber} completed - mouse nudged and restored");
             }
         }
 

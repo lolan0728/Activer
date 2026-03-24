@@ -10,8 +10,10 @@ public sealed class VersionViewModel : ObservableObject
         var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
         var assemblyVersion = assembly.GetName().Version;
         var version = assemblyVersion is null
-            ? "1.0.3"
-            : $"{assemblyVersion.Major}.{assemblyVersion.Minor}.{assemblyVersion.Build}";
+            ? "1.3"
+            : assemblyVersion.Build > 0
+                ? $"{assemblyVersion.Major}.{assemblyVersion.Minor}.{assemblyVersion.Build}"
+                : $"{assemblyVersion.Major}.{assemblyVersion.Minor}";
 
         VersionText = $"Activer v{version}";
         AuthorText = "Author: Eos Lolan";
