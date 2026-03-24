@@ -10,7 +10,7 @@ public sealed class VersionViewModel : ObservableObject
         var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
         var assemblyVersion = assembly.GetName().Version;
         var version = assemblyVersion is null
-            ? "1.3"
+            ? "1.4"
             : assemblyVersion.Build > 0
                 ? $"{assemblyVersion.Major}.{assemblyVersion.Minor}.{assemblyVersion.Build}"
                 : $"{assemblyVersion.Major}.{assemblyVersion.Minor}";

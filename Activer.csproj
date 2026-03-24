@@ -8,9 +8,9 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <StartupObject></StartupObject>
-    <Version>1.3</Version>
-    <AssemblyVersion>1.3</AssemblyVersion>
-    <FileVersion>1.3</FileVersion>
+    <Version>1.4</Version>
+    <AssemblyVersion>1.4</AssemblyVersion>
+    <FileVersion>1.4</FileVersion>
     <Company>Eos Lolan</Company>
     <Authors>Eos Lolan</Authors>
     <Copyright>© 2025 Eos Lolan. Licensed under the MIT License.</Copyright>
