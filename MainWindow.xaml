@@ -140,6 +140,39 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="TitleBarIconButton" TargetType="Button">
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0,0,10,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="#555555"/>
+            <Setter Property="HorizontalContentAlignment" Value="Right"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="HitArea"
+                                Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="#B22222"/>
+                                <Setter TargetName="HitArea" Property="Background" Value="Transparent"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="HitArea" Property="Background" Value="Transparent"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <Grid>
@@ -156,35 +189,18 @@
                        FontSize="16"
                        Foreground="Black"/>
 
-            <Button Width="15"
-                    Height="15"
+            <Button Style="{StaticResource TitleBarIconButton}"
                     HorizontalAlignment="Right"
-                    Margin="0,6,10,3"
-                    Command="{Binding CloseCommand}"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    Padding="0"
-                    Cursor="Hand">
-                <Button.Template>
-                    <ControlTemplate TargetType="Button">
-                        <Grid>
-                            <Path x:Name="XPath"
-                                  Stroke="#555555"
-                                  StrokeThickness="2"
-                                  Stretch="Uniform"
-                                  Data="M0,0 L1,1 M1,0 L0,1"/>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="XPath" Property="Stroke" Value="#B22222"/>
-                                <Setter Property="Background" Value="Transparent"/>
-                            </Trigger>
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="Transparent"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Button.Template>
+                    VerticalAlignment="Stretch"
+                    Command="{Binding CloseCommand}">
+                <Path Data="M1,1 L11,11 M11,1 L1,11"
+                      Width="12"
+                      Height="12"
+                      Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                      StrokeThickness="1.9"
+                      Stretch="Fill"
+                      StrokeStartLineCap="Round"
+                      StrokeEndLineCap="Round"/>
             </Button>
         </Grid>
 

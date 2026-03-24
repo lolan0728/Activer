@@ -44,10 +44,10 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
         StartStopCommand = new RelayCommand(ToggleSession);
         ShowVersionCommand = new RelayCommand(() => ShowVersionRequested?.Invoke(this, EventArgs.Empty));
-        CloseCommand = new RelayCommand(() => CloseRequested?.Invoke(this, EventArgs.Empty));
+        CloseCommand = new RelayCommand(() => MinimizeRequested?.Invoke(this, EventArgs.Empty));
     }
 
-    public event EventHandler? CloseRequested;
+    public event EventHandler? MinimizeRequested;
 
     public event EventHandler? ShowVersionRequested;
 

@@ -1,15 +1,19 @@
 using System.ComponentModel;
+using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Interop;
-using System.Windows.Data;
 using Activer.Core.Engine;
 using Activer.Core.Services;
 using Activer.Services;
 using Activer.ViewModels;
+using Forms = System.Windows.Forms;
+using WpfApplication = System.Windows.Application;
+using WpfTextBox = System.Windows.Controls.TextBox;
 
 namespace Activer;
 
@@ -18,6 +22,10 @@ public partial class MainWindow : Window
     private readonly MainViewModel viewModel;
     private readonly Win32IdleService idleService;
     private readonly LogWindow logWindow;
+    private readonly Forms.ContextMenuStrip trayMenu;
+    private readonly Icon trayIconResource;
+    private readonly Forms.NotifyIcon trayIcon;
+    private bool isHiddenToTray;
     private VersionWindow? currentVersionWindow;
 
     public MainWindow()
@@ -46,11 +54,25 @@ public partial class MainWindow : Window
             DataContext = logViewModel,
         };
 
+        trayMenu = new Forms.ContextMenuStrip();
+        trayMenu.Items.Add("Show Main Window", null, (_, _) => Dispatcher.Invoke(RestoreFromTray));
+        trayMenu.Items.Add("Exit", null, (_, _) => Dispatcher.Invoke(Close));
+
+        trayIconResource = LoadTrayIcon();
+        trayIcon = new Forms.NotifyIcon
+        {
+            Text = "Activer",
+            Icon = trayIconResource,
+            ContextMenuStrip = trayMenu,
+            Visible = false,
+        };
+
         Loaded += MainWindow_Loaded;
         Closing += MainWindow_Closing;
         viewModel.PropertyChanged += ViewModel_PropertyChanged;
         viewModel.ShowVersionRequested += ViewModel_ShowVersionRequested;
-        viewModel.CloseRequested += ViewModel_CloseRequested;
+        viewModel.MinimizeRequested += ViewModel_MinimizeRequested;
+        trayIcon.MouseDoubleClick += TrayIcon_MouseDoubleClick;
     }
 
     #region Window Shadow & Dragging
@@ -97,14 +119,16 @@ public partial class MainWindow : Window
     {
         viewModel.PropertyChanged -= ViewModel_PropertyChanged;
         viewModel.ShowVersionRequested -= ViewModel_ShowVersionRequested;
-        viewModel.CloseRequested -= ViewModel_CloseRequested;
+        viewModel.MinimizeRequested -= ViewModel_MinimizeRequested;
+        trayIcon.MouseDoubleClick -= TrayIcon_MouseDoubleClick;
+        CleanupTrayIcon();
         viewModel.Dispose();
         idleService.Dispose();
 
         logWindow.ForceClose = true;
         logWindow.Close();
 
-        Application.Current.Shutdown();
+        WpfApplication.Current.Shutdown();
     }
     #endregion
 
@@ -130,14 +154,14 @@ public partial class MainWindow : Window
         currentVersionWindow.Show();
     }
 
-    private void ViewModel_CloseRequested(object? sender, EventArgs e)
+    private void ViewModel_MinimizeRequested(object? sender, EventArgs e)
     {
-        Close();
+        HideToTray();
     }
 
     private void UpdateLogWindowVisibility()
     {
-        if (!viewModel.CanShowLog)
+        if (isHiddenToTray || !viewModel.CanShowLog)
         {
             logWindow.Hide();
             return;
@@ -163,12 +187,70 @@ public partial class MainWindow : Window
         logWindow.Topmost = true;
         logWindow.Show();
     }
+
+    private void TrayIcon_MouseDoubleClick(object? sender, Forms.MouseEventArgs e)
+    {
+        if (e.Button == Forms.MouseButtons.Left)
+        {
+            Dispatcher.Invoke(RestoreFromTray);
+        }
+    }
+
+    private void HideToTray()
+    {
+        if (isHiddenToTray)
+        {
+            return;
+        }
+
+        isHiddenToTray = true;
+        logWindow.Hide();
+        trayIcon.Visible = true;
+        Hide();
+    }
+
+    private void RestoreFromTray()
+    {
+        if (!isHiddenToTray)
+        {
+            Activate();
+            return;
+        }
+
+        isHiddenToTray = false;
+        Show();
+        WindowState = WindowState.Normal;
+        Activate();
+        trayIcon.Visible = false;
+        UpdateLogWindowVisibility();
+    }
+
+    private void CleanupTrayIcon()
+    {
+        trayIcon.Visible = false;
+        trayIcon.Dispose();
+        trayMenu.Dispose();
+        trayIconResource.Dispose();
+    }
+
+    private static Icon LoadTrayIcon()
+    {
+        var resourceInfo = WpfApplication.GetResourceStream(new Uri("pack://application:,,,/Resources/activer.ico"));
+        if (resourceInfo?.Stream is null)
+        {
+            throw new InvalidOperationException("Tray icon resource 'Resources/activer.ico' was not found.");
+        }
+
+        using var iconStream = resourceInfo.Stream;
+        using var icon = new Icon(iconStream);
+        return (Icon)icon.Clone();
+    }
     #endregion
 
     #region Input Validation
     private void NumberOnly(object sender, TextCompositionEventArgs e)
     {
-        if (sender is not TextBox textBox)
+        if (sender is not WpfTextBox textBox)
         {
             e.Handled = true;
             return;
@@ -193,14 +275,14 @@ public partial class MainWindow : Window
     private void IntervalBox_LostFocus(object sender, RoutedEventArgs e)
     {
         viewModel.NormalizeIntervalInputs();
-        RefreshBinding(IntervalMinBox, TextBox.TextProperty);
-        RefreshBinding(IntervalMaxBox, TextBox.TextProperty);
+        RefreshBinding(IntervalMinBox, WpfTextBox.TextProperty);
+        RefreshBinding(IntervalMaxBox, WpfTextBox.TextProperty);
     }
 
     private void NumberBox_LostFocus(object sender, RoutedEventArgs e)
     {
         viewModel.NormalizeIdleInput();
-        RefreshBinding(sender, TextBox.TextProperty);
+        RefreshBinding(sender, WpfTextBox.TextProperty);
     }
 
     private void TimeEndBox_LostFocus(object sender, RoutedEventArgs e)
